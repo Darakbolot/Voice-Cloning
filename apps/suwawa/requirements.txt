@@ -1,0 +1,11 @@
+torch
+torchaudio
+transformers
+langdetect
+flask
+pydub
+soundfile
+numpy
+scipy
+torchcodec 
+huggingface_hub

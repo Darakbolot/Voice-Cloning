@@ -1,0 +1,2 @@
+# Keep upstream YAML defaults in the consolidated repository.
+# Store private runtime configurations under /data/.

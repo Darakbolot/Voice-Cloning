@@ -1,0 +1,125 @@
+/* --------------------------------------------------
+   Global
+-------------------------------------------------- */
+body {
+    background: #f5f7fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* --------------------------------------------------
+   Page Title
+-------------------------------------------------- */
+.page-title {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #2c3e50;
+}
+
+/* --------------------------------------------------
+   Record Button
+-------------------------------------------------- */
+#recordBtn {
+    width: 150px;
+    height: 150px;
+    border-radius: 100%;
+    font-size: 22px;
+    font-weight: bold;
+    transition: 0.3s ease;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+}
+
+#recordBtn:hover {
+    background-color: #0b5ed7;
+    transform: scale(1.06);
+}
+
+#recordBtn.recording {
+    background-color: #dc3545 !important;
+    transform: scale(1.1);
+    animation: pulse 1s infinite;
+}
+
+/* Pulse animation saat merekam */
+@keyframes pulse {
+    0% { transform: scale(1.1); }
+    50% { transform: scale(1.23); }
+    100% { transform: scale(1.1); }
+}
+
+/* --------------------------------------------------
+   Status Text
+-------------------------------------------------- */
+#status {
+    font-size: 18px;
+    font-weight: 500;
+    color: #444;
+}
+
+/* --------------------------------------------------
+   Card Styling
+-------------------------------------------------- */
+.card {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.card-body {
+    padding: 25px;
+}
+
+/* Textarea */
+#transcript {
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
+}
+
+/* --------------------------------------------------
+   Audio Player
+-------------------------------------------------- */
+audio {
+    border-radius: 10px;
+    outline: none;
+    margin-top: 10px;
+}
+
+/* Custom audio player background */
+audio::-webkit-media-controls-panel {
+    background-color: #f0f3f7;
+}
+
+/* --------------------------------------------------
+   Loading Spinner (optional)
+-------------------------------------------------- */
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #dcdcdc;
+    border-top-color: #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------
+   Responsive
+-------------------------------------------------- */
+@media (max-width: 480px) {
+    #recordBtn {
+        width: 120px;
+        height: 120px;
+        font-size: 18px;
+    }
+
+    .card-body {
+        padding: 18px;
+    }
+}

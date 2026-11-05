@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Text & Text to Speech - Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .record-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 auto;
+        }
+
+        .record-button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .record-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .record-button.recording {
+            background: #e74c3c;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .transcription-box {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 120px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+            position: relative;
+        }
+
+        .transcription-box.active {
+            border-color: #667eea;
+            animation: borderPulse 2s infinite;
+        }
+
+        @keyframes borderPulse {
+            0%, 100% { border-color: #667eea; }
+            50% { border-color: #764ba2; }
+        }
+
+        .transcription-box.streaming {
+            border-color: #27ae60;
+        }
+
+        .transcription-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .streaming-indicator {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+
+        .streaming-indicator.active {
+            display: block;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0.5; }
+        }
+
+        .interim-text {
+            color: #888;
+            font-style: italic;
+        }
+
+        .final-text {
+            color: #333;
+        }
+
+        .tts-button {
+            background: #764ba2;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tts-button:hover {
+            background: #653a8a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .tts-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #666;
+            min-height: 20px;
+        }
+
+        .status.success {
+            color: #27ae60;
+        }
+
+        .status.error {
+            color: #e74c3c;
+        }
+
+        .status.processing {
+            color: #667eea;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .audio-visualizer {
+            width: 100%;
+            height: 60px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 10px;
+        }
+
+        .audio-visualizer.active {
+            display: flex;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Speech to Text & Text to Speech</h1>
+        
+        <!-- Speech to Text Section -->
+        <div class="section">
+            <h2>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+                Speech to Text (Real-time)
+            </h2>
+            <button id="recordButton" class="record-button">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="10"/>
+                </svg>
+                <span id="recordButtonText">Mulai Rekam</span>
+            </button>
+            
+            <!-- Audio Visualizer -->
+            <div id="audioVisualizer" class="audio-visualizer">
+                <div class="visualizer-bar" style="height: 10px;"></div>
+                <div class="visualizer-bar" style="height: 20px;"></div>
+                <div class="visualizer-bar" style="height: 15px;"></div>
+                <div class="visualizer-bar" style="height: 30px;"></div>
+                <div class="visualizer-bar" style="height: 25px;"></div>
+                <div class="visualizer-bar" style="height: 35px;"></div>
+                <div class="visualizer-bar" style="height: 20px;"></div>
+                <div class="visualizer-bar" style="height: 30px;"></div>
+                <div class="visualizer-bar" style="height: 15px;"></div>
+                <div class="visualizer-bar" style="height: 25px;"></div>
+                <div class="visualizer-bar" style="height: 20px;"></div>
+                <div class="visualizer-bar" style="height: 10px;"></div>
+            </div>
+            
+            <div class="status" id="sttStatus"></div>
+            
+            <div id="transcriptionBox" class="transcription-box">
+                <span class="streaming-indicator" id="streamingIndicator">● LIVE</span>
+                <div class="transcription-text" id="transcriptionText">
+                    Tekan tombol untuk mulai merekam suara Anda...
+                </div>
+            </div>
+        </div>
+
+        <!-- Text to Speech Section -->
+        <div class="section">
+            <h2>
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                    <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                Text to Speech
+            </h2>
+            <button id="ttsButton" class="tts-button" disabled>
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                <span id="ttsButtonText">Generate Suara</span>
+            </button>
+            <div class="status" id="ttsStatus"></div>
+            <audio id="audioPlayer" controls style="display: none;"></audio>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let currentTranscription = "";
+        let recognition;
+        let audioContext;
+        let analyser;
+        let visualizerInterval;
+
+        const recordButton = document.getElementById('recordButton');
+        const recordButtonText = document.getElementById('recordButtonText');
+        const transcriptionBox = document.getElementById('transcriptionBox');
+        const transcriptionText = document.getElementById('transcriptionText');
+        const streamingIndicator = document.getElementById('streamingIndicator');
+        const sttStatus = document.getElementById('sttStatus');
+        const ttsButton = document.getElementById('ttsButton');
+        const ttsButtonText = document.getElementById('ttsButtonText');
+        const ttsStatus = document.getElementById('ttsStatus');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioVisualizer = document.getElementById('audioVisualizer');
+
+        // Inisialisasi Web Speech API untuk real-time transcription
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                console.warn('Web Speech API tidak didukung, menggunakan mode batch');
+                return null;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'id-ID'; // Bahasa Indonesia
+
+            let finalTranscript = '';
+            let interimTranscript = '';
+
+            recognition.onstart = () => {
+                console.log('Speech recognition started');
+                streamingIndicator.classList.add('active');
+                transcriptionBox.classList.add('streaming');
+            };
+
+            recognition.onresult = (event) => {
+                interimTranscript = '';
+                
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Update tampilan dengan interim dan final transcript
+                currentTranscription = finalTranscript;
+                transcriptionText.innerHTML =
+                    `<span class="final-text">${finalTranscript}</span>` +
+                    `<span class="interim-text">${interimTranscript}</span>`;
+                
+                // Auto-scroll ke bawah
+                transcriptionBox.scrollTop = transcriptionBox.scrollHeight;
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error !== 'no-speech') {
+                    sttStatus.textContent = `Error: ${event.error}`;
+                    sttStatus.className = 'status error';
+                }
+            };
+
+            recognition.onend = () => {
+                console.log('Speech recognition ended');
+                streamingIndicator.classList.remove('active');
+                transcriptionBox.classList.remove('streaming');
+                
+                if (isRecording) {
+                    // Restart jika masih recording
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log('Recognition restart failed:', e);
+                    }
+                }
+            };
+
+            return recognition;
+        }
+
+        // Inisialisasi audio recording untuk fallback
+        async function initRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                // Setup audio visualizer
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                analyser.fftSize = 256;
+                
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                    audioChunks = [];
+                    
+                    // Jika Web Speech API tidak tersedia, gunakan server transcription
+                    if (!recognition) {
+                        await transcribeAudio(audioBlob);
+                    }
+                };
+
+                return true;
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                sttStatus.textContent = 'Error: Tidak dapat mengakses microphone';
+                sttStatus.className = 'status error';
+                return false;
+            }
+        }
+
+        // Audio visualizer
+        function startVisualizer() {
+            const bars = audioVisualizer.querySelectorAll('.visualizer-bar');
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function updateBars() {
+                analyser.getByteFrequencyData(dataArray);
+                
+                bars.forEach((bar, index) => {
+                    const value = dataArray[index * 8] || 0;
+                    const height = (value / 255) * 40 + 5;
+                    bar.style.height = height + 'px';
+                });
+            }
+
+            visualizerInterval = setInterval(updateBars, 50);
+            audioVisualizer.classList.add('active');
+        }
+
+        function stopVisualizer() {
+            if (visualizerInterval) {
+                clearInterval(visualizerInterval);
+                visualizerInterval = null;
+            }
+            audioVisualizer.classList.remove('active');
+        }
+
+        // Toggle recording
+        recordButton.addEventListener('click', async () => {
+            if (!isRecording) {
+                // Mulai rekam
+                if (!mediaRecorder) {
+                    const success = await initRecording();
+                    if (!success) return;
+                }
+
+                // Inisialisasi speech recognition jika belum
+                if (!recognition) {
+                    recognition = initSpeechRecognition();
+                }
+
+                audioChunks = [];
+                currentTranscription = '';
+                transcriptionText.innerHTML = '<span class="interim-text">Mendengarkan...</span>';
+                
+                mediaRecorder.start();
+                
+                // Start real-time transcription jika tersedia
+                if (recognition) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log('Recognition already started or error:', e);
+                    }
+                }
+                
+                startVisualizer();
+                isRecording = true;
+                
+                recordButton.classList.add('recording');
+                recordButtonText.textContent = 'Stop Rekam';
+                transcriptionBox.classList.add('active');
+                sttStatus.textContent = '🎙 Merekam dan mendengarkan...';
+                sttStatus.className = 'status processing';
+                ttsButton.disabled = false;
+                
+            } else {
+                // Stop rekam
+                mediaRecorder.stop();
+                
+                if (recognition) {
+                    recognition.stop();
+                }
+                
+                stopVisualizer();
+                isRecording = false;
+                
+                recordButton.classList.remove('recording');
+                recordButtonText.textContent = 'Mulai Rekam';
+                transcriptionBox.classList.remove('active');
+                streamingIndicator.classList.remove('active');
+                
+                if (currentTranscription) {
+                    sttStatus.textContent = '✓ Transcription selesai!';
+                    sttStatus.className = 'status success';
+                } else {
+                    sttStatus.textContent = 'Tidak ada suara terdeteksi';
+                    sttStatus.className = 'status';
+                }
+            }
+        });
+
+        // Transcribe audio (fallback untuk browser tanpa Web Speech API)
+        async function transcribeAudio(audioBlob) {
+            try {
+                transcriptionText.textContent = 'Memproses audio...';
+                const formData = new FormData();
+                formData.append('audio', audioBlob, 'recording.webm');
+
+                const response = await fetch('/api/transcribe', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentTranscription = data.transcription;
+                    transcriptionText.innerHTML = <span class="final-text">${currentTranscription}</span>;
+                    sttStatus.textContent = '✓ Transcription berhasil!';
+                    sttStatus.className = 'status success';
+                    ttsButton.disabled = false;
+                } else {
+                    throw new Error('Transcription failed');
+                }
+
+            } catch (error) {
+                console.error('Error transcribing audio:', error);
+                transcriptionText.textContent = 'Error: Gagal melakukan transcription';
+                sttStatus.textContent = '✗ Error transcription';
+                sttStatus.className = 'status error';
+            }
+        }
+
+        // Text to Speech
+        ttsButton.addEventListener('click', async () => {
+            if (!currentTranscription) return;
+
+            try {
+                ttsButton.disabled = true;
+                ttsButtonText.innerHTML = 'Generating... <div class="loader"></div>';
+                ttsStatus.textContent = '⏳ Generating audio...';
+                ttsStatus.className = 'status processing';
+
+                const response = await fetch(`/api/synthesize?text=${encodeURIComponent(currentTranscription)}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('TTS failed');
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                audioPlayer.src = audioUrl;
+                audioPlayer.style.display = 'block';
+                audioPlayer.play();
+
+                ttsStatus.textContent = '✓ Audio berhasil di-generate!';
+                ttsStatus.className = 'status success';
+
+            } catch (error) {
+                console.error('Error generating speech:', error);
+                ttsStatus.textContent = '✗ Error generating audio';
+                ttsStatus.className = 'status error';
+            } finally {
+                ttsButton.disabled = false;
+                ttsButtonText.innerHTML = '<svg class="icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg> Generate Suara';
+            }
+        });
+
+        // Check browser support
+        window.addEventListener('load', () => {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                sttStatus.textContent = 'ℹ Browser tidak mendukung real-time transcription. Menggunakan mode batch.';
+                sttStatus.className = 'status';
+            }
+        });
+    </script>
+</body>
+</html>
